@@ -220,7 +220,7 @@ $very-light-grey: #ededed;
     white-space: nowrap;
   }
 
-  .download-only-help {
+  .notice-help {
     background-image: url("MOZ_EXTENSION/icons/help-16.svg");
     background-position: center center;
     background-repeat: no-repeat;
@@ -229,7 +229,7 @@ $very-light-grey: #ededed;
   }
 }
 
-.download-only-details {
+.notice-tooltip {
   background: #fff;
   border-radius: 3px;
   border: 1px solid #9d9d9e;
@@ -249,7 +249,7 @@ $very-light-grey: #ededed;
   width: 300px;
   z-index: $overlay-z-index + 1;
 
-  .download-only:hover & {
+  .notice:hover & {
     display: block;
   }
 
@@ -382,6 +382,20 @@ $very-light-grey: #ededed;
     background-position: 7px;
     padding-left: 32px;
   }
+}
+
+.highlight-button-copy {
+  @extend .button;
+  @extend .secondary;
+  background-image: url("MOZ_EXTENSION/icons/copy.svg");
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: 18px 18px;
+  border: 1px solid $light-active;
+  // Overrides display: flex from .button, which causes hover problems
+  display: block;
+  margin: 5px;
+  width: 40px;
 }
 
 .pixel-dimensions {

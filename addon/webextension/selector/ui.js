@@ -100,7 +100,7 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
   function renderDownloadNotice(initAtBottom = false) {
     let notice = makeEl("table", "notice");
     notice.innerHTML = `
-      <div class="download-only-details">
+      <div class="notice-tooltip">
         <p data-l10n-id="downloadOnlyDetails"></p>
         <ul>
           <li data-l10n-id="downloadOnlyDetailsPrivate"></li>
@@ -110,7 +110,7 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
       <tbody>
         <tr class="notice-wrapper">
           <td class="notice-content" data-l10n-id="downloadOnlyNotice"></td>
-          <td class="download-only-help"></td>
+          <td class="notice-help"></td>
         </tr>
       <tbody>`;
     localizeText(notice);
@@ -184,6 +184,7 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
     unhide() {
       this.updateElementSize();
       this.element.style.display = "";
+      catcher.watchPromise(callBackground("sendEvent", "internal", "unhide-selection-frame"));
       if (highContrastCheck(this.element.contentWindow)) {
         this.element.contentDocument.body.classList.add("hcm");
       }
@@ -349,6 +350,7 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
       window.addEventListener("scroll", watchFunction(assertIsTrusted(this.onScroll)));
       window.addEventListener("resize", this.onResize, true);
       this.element.style.display = "";
+      catcher.watchPromise(callBackground("sendEvent", "internal", "unhide-preselection-frame"));
       if (highContrastCheck(this.element.contentWindow)) {
         this.element.contentDocument.body.classList.add("hcm");
       }
@@ -402,12 +404,18 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
                 <div class="preview-overlay">
                   <div class="preview-image">
                     <div class="preview-buttons">
-                      <button class="highlight-button-cancel"></button>
+                      <button class="highlight-button-cancel"
+                        title="${browser.i18n.getMessage("cancelScreenshot")}"></button>
+                      <button class="highlight-button-copy"
+                        title="${browser.i18n.getMessage("copyScreenshot")}"></button>
                       ${isDownloadOnly() ?
                         `<button class="highlight-button-download download-only-button"
+                                 title="${browser.i18n.getMessage("downloadScreenshot")}"
                                  data-l10n-id="downloadScreenshot"></button>` :
-                        `<button class="highlight-button-download"></button>
+                        `<button class="highlight-button-download"
+                                 title="${browser.i18n.getMessage("downloadScreenshot")}"></button>
                          <button class="preview-button-save"
+                                 title="${browser.i18n.getMessage("saveScreenshotSelectedArea")}"
                                  data-l10n-id="saveScreenshotSelectedArea"></button>`
                       }
                     </div>
@@ -425,6 +433,8 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
               overlay.querySelector(".preview-button-save").addEventListener(
                 "click", watchFunction(assertIsTrusted(standardOverlayCallbacks.onSavePreview)));
             }
+            overlay.querySelector(".highlight-button-copy").addEventListener(
+              "click", watchFunction(assertIsTrusted(standardOverlayCallbacks.onCopyPreview)));
             overlay.querySelector(".highlight-button-download").addEventListener(
               "click", watchFunction(assertIsTrusted(standardOverlayCallbacks.onDownloadPreview)));
             overlay.querySelector(".highlight-button-cancel").addEventListener(
@@ -446,6 +456,7 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
 
     unhide() {
       this.element.style.display = "";
+      catcher.watchPromise(callBackground("sendEvent", "internal", "unhide-preview-frame"));
       this.element.focus();
     },
 
@@ -553,6 +564,18 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
         this.download.style.display = "";
       } else {
         this.download.style.display = "none";
+      }
+      if (callbacks !== undefined && callbacks.copy) {
+        this.copy.removeAttribute("disabled");
+        this.copy.onclick = watchFunction(assertIsTrusted((e) => {
+          this.copy.setAttribute("disabled", true);
+          callbacks.copy(e);
+          e.preventDefault();
+          e.stopPropagation();
+        }));
+        this.copy.style.display = "";
+      } else {
+        this.copy.style.display = "none";
       }
       let bodyRect = getBodyRect();
 
@@ -674,8 +697,13 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
       let cancel = makeEl("button", "highlight-button-cancel");
       cancel.title = browser.i18n.getMessage("cancelScreenshot");
       buttons.appendChild(cancel);
-      let download;
-      let save;
+
+      let copy = makeEl("button", "highlight-button-copy");
+      copy.title = browser.i18n.getMessage("copyScreenshot");
+      buttons.appendChild(copy);
+
+      let download, save;
+
       if (isDownloadOnly()) {
         download = makeEl("button", "highlight-button-download download-only-button");
         download.title = browser.i18n.getMessage("downloadScreenshot");
@@ -694,6 +722,7 @@ this.ui = (function() { // eslint-disable-line no-unused-vars
       this.buttons = buttons;
       this.cancel = cancel;
       this.download = download;
+      this.copy = copy;
       this.save = save;
       boxEl.appendChild(buttons);
       for (let name of movements) {
